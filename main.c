@@ -2,31 +2,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
-#include <math.h>
-#include <unistd.h>
 
 enum { Win_Close, Win_Name, Atom_Type, Atom_Last};
 
 #define WIDTH                     800
 #define HEIGHT                    800
-#define XWorldToScreen            ( (1 + c.t[i].v[j].x) * (wa.width / 2.00) )
-#define YWorldToScreen            ( (1 + c.t[i].v[j].y) * (wa.height / 2.00) )
 
 #define POINTERMASKS              ( ButtonPressMask )
 #define KEYBOARDMASKS             ( KeyPressMask )
-#define EXPOSEMASKS               ( StructureNotifyMask | ExposureMask )
+#define WINDOWMASKS               ( StructureNotifyMask | ExposureMask )
 
 /* Some Global Variables */
 Display *displ;
 Window win;
-Pixmap pixmap;
 XWindowAttributes wa;
 XSetWindowAttributes sa;
 GC gc;
 XGCValues gcvalues;
 Atom wmatom[Atom_Last];
 
-static int MAPCOUNT = 0;
 static int RUNNING = 1;
 
 /* Event handling functions. */
@@ -41,8 +35,6 @@ const static void keypress(XEvent *event);
 
 /* Xlib relative functions and event dispatcher. */
 static KeySym get_keysym(XEvent *event);
-const static void pixmapupdate(void);
-const static void pixmapdisplay(void);
 const static void atomsinit(void);
 const static int board(void);
 static void (*handler[LASTEvent]) (XEvent *event) = {
@@ -59,15 +51,12 @@ static void (*handler[LASTEvent]) (XEvent *event) = {
 /* Project specific inludes. */
 #include "header_files/locale.h"
 
-/* Testing */
-
 const static void clientmessage(XEvent *event) {
 
     if (event->xclient.data.l[0] == wmatom[Win_Close]) {
         printf("WM_DELETE_WINDOW");
         
         XFree(gc);
-        XFreePixmap(displ, pixmap);
         XDestroyWindow(displ, win);
         XCloseDisplay(displ);
         
@@ -82,24 +71,18 @@ const static void reparentnotify(XEvent *event) {
 const static void mapnotify(XEvent *event) {
 
     printf("mapnotify event received\n");
-
-    if (MAPCOUNT) {
-        pixmapdisplay();
-    } else {
-        MAPCOUNT = 1;
-    }
 }
 const static void expose(XEvent *event) {
 
     printf("expose event received\n");
-    pixmapupdate();
 }
 const static void resizerequest(XEvent *event) {
-
+    /* Must set the ResizeRequestMask for this to work. */
     printf("resizerequest event received\n");
 }
 const static void configurenotify(XEvent *event) {
 
+    printf("configurenotify Sended event received\n");
     if (!event->xconfigure.send_event) {
         printf("configurenotify event received\n");
         XGetWindowAttributes(displ, win, &wa);
@@ -113,19 +96,17 @@ const static void buttonpress(XEvent *event) {
 const static void keypress(XEvent *event) {
 
     KeySym keysym = get_keysym(event);
-    // printf("Key Pressed: %ld\n", keysym);
-    // printf("\x1b[H\x1b[J");
+    printf("Key Pressed: %ld\n", keysym);
+
     switch (keysym) {
 
         default :
             return;
     }
-
-    pixmapdisplay();
 }
 static KeySym get_keysym(XEvent *event) {
 
-    /* Get user text input */
+    /* Get Keyboard text input */
     XIM xim;
     XIC xic;
     char *failed_arg;
@@ -154,13 +135,6 @@ static KeySym get_keysym(XEvent *event) {
     }
     return keysym;
 }
-const static void pixmapupdate(void) {
-    pixmap = XCreatePixmap(displ, win, wa.width, wa.height, wa.depth);
-    XCopyArea(displ, win, pixmap, gc, 0, 0, wa.width, wa.height, 0, 0);
-}
-const static void pixmapdisplay(void) {
-    XCopyArea(displ, pixmap, win, gc, 0, 0, wa.width, wa.height, 0, 0);
-}
 const static void atomsinit(void) {
 
     wmatom[Win_Close] = XInternAtom(displ, "WM_DELETE_WINDOW", False);
@@ -168,7 +142,7 @@ const static void atomsinit(void) {
 
     wmatom[Win_Name] = XInternAtom(displ, "WM_NAME", False);
     wmatom[Atom_Type] =  XInternAtom(displ, "STRING", False);
-    XChangeProperty(displ, win, wmatom[Win_Name], wmatom[Atom_Type], 8, PropModeReplace, (unsigned char*)"Anvil", 5);
+    XChangeProperty(displ, win, wmatom[Win_Name], wmatom[Atom_Type], 8, PropModeReplace, (unsigned char*)"Xlib Codebase", 13);
 }
 /* General initialization and event handling. */
 const static int board(void) {
@@ -183,7 +157,7 @@ const static int board(void) {
     int screen = XDefaultScreen(displ);
 
     /*  Root main Window */
-    sa.event_mask = EXPOSEMASKS | KEYBOARDMASKS | POINTERMASKS;
+    sa.event_mask = WINDOWMASKS | KEYBOARDMASKS | POINTERMASKS;
     sa.background_pixel = 0x000000;
     win = XCreateWindow(displ, XRootWindow(displ, screen), 0, 0, WIDTH, HEIGHT, 0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel | CWEventMask, &sa);
     XMapWindow(displ, win);

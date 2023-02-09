@@ -16,7 +16,7 @@ all:
 	$(CC) $(CFLAGS) main.c locale.c -o $(OBJ) $(LINKS);
 
 exec:
-	./anvil
+	./$(OBJ)
 
 clean:
 	sudo apt autoremove -y;
