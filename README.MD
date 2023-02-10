@@ -4,7 +4,7 @@ Only Xlib and standard C Libraries have been used to develop this software.<br>
 This repository is a basic xlib code base, which aims to help you get a basic understanding of, how X11<br>
 is functioning under the hood. It presents the needed code to open a window and handle some events.<br>
 Altho is not very sofisticated, it provides all the fundamentals to help you get started creating X11 applications.<br>
-If you have any questions don't hesitate to mail me.<br>
+
 If you are interested in obtaining this software, clone it and from inside the projects main folder,<br>
 run first the following command, to download and install the xlib library, if you not already have it installed.<br>
 ```
